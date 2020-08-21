@@ -196,7 +196,7 @@ int main(){
     uint8_t word[44][4];
     KeyExpension(key,word);
     cout<<"enter the string"<<endl;
-    getline(cin,k);
+    getline(cin,str);
     int l = str.length() + 1;
     int len_out = (int)ceil(l/16.0)*16;
     uint8_t aes_out[len_out];
