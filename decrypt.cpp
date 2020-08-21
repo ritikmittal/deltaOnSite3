@@ -166,20 +166,90 @@ void Inversecipher(uint8_t input[16], uint8_t output[16],uint8_t word[44][4]){
 };
 
 
+string base64Decoder(string encoded, int len_str)
+{
+    int len_out = (len_str/4) *3 +4;
+    string decoded_string(len_out,0);
+    int i, j, k = 0;
+    int num = 0;
+    int count_bits = 0;
+    for (i = 0; i < len_str; i += 4){
+        num = 0, count_bits = 0;
+        for (j = 0; j < 4; j++){
+            if (encoded[i + j] != '='){
+                num = num << 6;
+                count_bits += 6;
+            }
+            if (encoded[i + j] >= 'A' && encoded[i + j] <= 'Z')
+                num = num | (encoded[i + j] - 'A');
+            else if (encoded[i + j] >= 'a' && encoded[i + j] <= 'z')
+                num = num | (encoded[i + j] - 'a' + 26);
+            else if (encoded[i + j] >= '0' && encoded[i + j] <= '9')
+                num = num | (encoded[i + j] - '0' + 52);
+            else if (encoded[i + j] == '+')
+                num = num | 62;
+            else if (encoded[i + j] == '/')
+                num = num | 63;
+            else {
+                num = num >> 2;
+                count_bits -= 2;
+            }
+        }
+        while (count_bits != 0){
+            count_bits -= 8;
+            decoded_string[k++] = (num >> count_bits) & 255;
+        }
+    }
+    decoded_string[k] = '\0';
+    return decoded_string;
+}
+
 
 int main(){
-    uint8_t input[16] = {0x39, 0x25, 0x84, 0x1d, 0x02, 0xdc, 0x09, 0xfb, 0xdc, 0x11, 0x85, 0x97, 0x19, 0x6a, 0x0b, 0x32};
-    uint8_t key[16] = {0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2 ,0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c};
+    uint8_t aes_input[16],aes_output[16], key[16];
+    string str,k;
+    cout<<"Enter the key: ";
+    getline(cin,k);
+    if(k.length() != 16) {
+        cout << "not a valid key of 16 byte" << endl;
+        return 0;
+    }
+    for(int i=0;i<16;i++){
+        key[i] = k[i];
+    }
     uint8_t word[44][4];
     KeyExpension(key,word);
-    uint8_t output[16];
-    Inversecipher(input, output,word);
-    for(int i=0;i<4;i++){
-        for(int j=0;j<4;j++){
-            cout<<std::hex<<(int)output[i + j*4]<<' ';
+    cout<<"enter the string"<<endl;
+    getline(cin,str);
+    int l = str.length();
+    string in_aes = base64Decoder(str,str.length());
+    l = in_aes.length();
+    uint8_t aes_out[l];
+    for(int i=0;i<l;i+=16){
+        int j = 0;
+        if((l-i)%16 == 0) {
+            for (; j < 16; j++) {
+                aes_input[j] = (uint8_t) in_aes[i + j];
+            }
+        } else {
+            for (; (i+j) < l; j++) {
+                aes_input[j] = (uint8_t) in_aes[i + j];
+            }
+            for(;j<16;j++){
+                aes_input[j] = 0;
+            }
         }
-        cout<<endl;
+        Inversecipher(aes_input,aes_output, word);
+        for(int j=0;j<16;j++){
+            aes_out[i+j] = aes_output[j];
+        }
     }
-    cout<<endl;
+    string toprint(l+1,0);
+    int i=0;
+    while(aes_out[i] != 0){
+        toprint[i] = (char)aes_out[i];
+        i++;
+    }
+    cout<<toprint<<endl;
     return 0;
 }

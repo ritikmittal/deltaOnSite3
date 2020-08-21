@@ -145,18 +145,80 @@ void cipher(uint8_t input[16], uint8_t output[16],uint8_t word[44][4]){
         output[i] = current_state[i];
 };
 
+string base64Encoder(uint8_t input_str[], int len_str)
+{
+    char char_set[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    int len_out = (len_str*4)/3 + 4;
+    string res_str(len_out,'\0');
+    int index, no_of_bits = 0, padding = 0, val = 0, count = 0, temp;
+    int i, j, k = 0;
+    for (i = 0; i < len_str; i += 3){
+        val = 0, count = 0, no_of_bits = 0;
+        for (j = i; j < len_str && j <= i + 2; j++){
+            val = val << 8;
+            val = val | input_str[j];
+            count++;
+        }
+        no_of_bits = count * 8;
+        padding = no_of_bits % 3;
+        while (no_of_bits != 0){
+            if (no_of_bits >= 6){
+                temp = no_of_bits - 6;
+                index = (val >> temp) & 63;
+                no_of_bits -= 6;
+            } else{
+                temp = 6 - no_of_bits;
+                index = (val << temp) & 63;
+                no_of_bits = 0;
+            }
+            res_str[k++] = char_set[index];
+        }
+    }
+    for (i = 1; i <= padding; i++){
+        res_str[k++] = '=';
+    }
+    res_str[k] = '\0';
+    return res_str;
+}
+
 int main(){
-    uint8_t input[16] = {0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d, 0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34};
-    uint8_t key[16] = {0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2 ,0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c};
+    uint8_t aes_input[16],aes_output[16], key[16];
+    string str,k;
+    cout<<"Enter the key: ";
+    getline(cin,k);
+    if(k.length() != 16) {
+        cout << "not a valid key of 16 byte" << endl;
+        return 0;
+    }
+    for(int i=0;i<16;i++){
+        key[i] = k[i];
+    }
     uint8_t word[44][4];
     KeyExpension(key,word);
-    uint8_t output[16];
-    cipher(input, output,word);
-    for(int i=0;i<4;i++){
-        for(int j=0;j<4;j++){
-            cout<<std::hex<<(int)output[i + j*4]<<' ';
+    cout<<"enter the string"<<endl;
+    getline(cin,k);
+    int l = str.length() + 1;
+    int len_out = (int)ceil(l/16.0)*16;
+    uint8_t aes_out[len_out];
+    for(int i=0;i<l;i+=16){
+        int j = 0;
+        if((l-i)%16 == 0) {
+            for (; j < 16; j++) {
+                aes_input[j] = (uint8_t) str[i + j];
+            }
+        } else {
+            for (; (i+j) < l; j++) {
+                aes_input[j] = (uint8_t) str[i + j];
+            }
+            for(;j<16;j++){
+                aes_input[j] = 0;
+            }
         }
-        cout<<endl;
+        cipher(aes_input,aes_output, word);
+        for(int j=0;j<16;j++){
+            aes_out[i+j] = aes_output[j];
+        }
     }
+    cout<<base64Encoder(aes_out,len_out)<<endl;
     return 0;
 }
